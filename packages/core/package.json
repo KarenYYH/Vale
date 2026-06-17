@@ -1,0 +1,33 @@
+{
+  "name": "@vale/core",
+  "version": "0.1.0",
+  "description": "Vale knowledge engine — database, ingest, search, link, lint, embedding, scaffold",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@vale/shared": "workspace:*",
+    "better-sqlite3": "^11.7.0",
+    "chokidar": "^4.0.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.0"
+  }
+}

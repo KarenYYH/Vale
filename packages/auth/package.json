@@ -1,0 +1,23 @@
+{
+  "name": "@vale/auth",
+  "version": "0.1.0",
+  "description": "Vale authentication — AuthProvider abstraction + LocalAuthProvider (JWT)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@vale/shared": "workspace:*",
+    "jose": "^5.0.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.8.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@vale/server",
+  "version": "0.1.0",
+  "description": "Vale HTTP server — REST API + MCP HTTP transport + static PWA",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@vale/agent": "workspace:*",
+    "@vale/auth": "workspace:*",
+    "@vale/core": "workspace:*",
+    "@vale/mcp": "workspace:*",
+    "@vale/shared": "workspace:*",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}

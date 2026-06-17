@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vale": {
+      "command": "vale",
+      "args": ["serve", "--stdio", "--workspace", "/Users/me/my-knowledge-base"]
+    }
+  }
+}

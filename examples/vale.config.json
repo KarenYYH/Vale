@@ -1,0 +1,47 @@
+{
+  "version": "2.0",
+  "workspace": {
+    "name": "My Knowledge Base",
+    "layers": {
+      "wiki": "wiki/",
+      "raw": "raw/",
+      "zettel": "zettel/",
+      "projects": "projects/"
+    },
+    "ignore": [".git", "node_modules", ".vale/vectors"]
+  },
+  "ingest": {
+    "concurrency": 4,
+    "supportedExtensions": [".md", ".txt", ".html", ".pdf"],
+    "autoEmbed": true,
+    "embedBatchSize": 32,
+    "watcher": {
+      "enabled": true,
+      "paths": ["raw/**/*"],
+      "stabilityThreshold": 300
+    }
+  },
+  "vector": {
+    "backend": "memory",
+    "model": "Xenova/all-MiniLM-L6-v2",
+    "dimension": 384,
+    "metric": "cosine"
+  },
+  "search": {
+    "defaultMode": "hybrid",
+    "hybrid": {
+      "ftsWeight": 0.5,
+      "vectorWeight": 0.5,
+      "rrfConstant": 60,
+      "maxCandidates": 200
+    },
+    "context": {
+      "maxFiles": 5,
+      "maxChars": 12000,
+      "layerPriority": ["zettel", "wiki", "raw"]
+    }
+  },
+  "lint": {
+    "enabledRules": ["broken-links", "orphans", "frontmatter", "tags"]
+  }
+}

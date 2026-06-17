@@ -1,0 +1,19 @@
+services:
+  vale:
+    build: .
+    ports:
+      - "4567:4567"   # REST API + PWA
+      - "4568:4568"   # MCP HTTP transport
+    volumes:
+      - ./workspace:/workspace
+    environment:
+      - VALE_JWT_SECRET=${VALE_JWT_SECRET:-change-me-in-production}
+      - VALE_AGENT_KEY=${VALE_AGENT_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4567/api/ping').then(r=>process.exit(r.ok?0:1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,30 @@
+{
+  "name": "@vale/cli",
+  "version": "0.1.0",
+  "description": "Vale CLI — command-line interface for the AI-native knowledge management protocol",
+  "type": "module",
+  "main": "./dist/main.js",
+  "bin": {
+    "vale": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@vale/auth": "workspace:*",
+    "@vale/core": "workspace:*",
+    "@vale/mcp": "workspace:*",
+    "@vale/server": "workspace:*",
+    "@vale/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.0"
+  }
+}

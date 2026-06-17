@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/macbookpro/Documents/my-project/LLM Wiki/llm-wiki/**)",
+      "Bash(cd \"/Users/macbookpro/Documents/my-project/LLM Wiki/llm-wiki\" && echo \"===src===\" && ls src && echo \"===backend===\" && ls -R backend | head -40 && echo \"===skills===\" && ls -R skills | head -30)",
+      "Bash(grep -rliE \"transport|http|stdio\" mcp/src cli/src)",
+      "Bash(grep -rliE \"anthropic|openai|bedrock|\\\\bllm\\\\b|chat.?completion\" core/src mcp/src cli/src shared/src)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(curl -s --max-time 25 https://api.github.com/repos/openai/codex/contents/)",
+      "Bash(curl -s --max-time 25 https://raw.githubusercontent.com/openai/codex/main/LICENSE)",
+      "Bash(curl -s --max-time 25 https://registry.npmjs.org/@anthropic-ai/claude-code/latest)",
+      "Bash(curl -s --max-time 25 https://raw.githubusercontent.com/anthropics/claude-code/main/README.md)",
+      "Bash(curl -s --max-time 25 https://raw.githubusercontent.com/openai/codex/main/NOTICE)",
+      "Bash(curl -s --max-time 25 https://api.github.com/repos/anthropics/claude-code/contents/)",
+      "Bash(curl -s --max-time 25 https://raw.githubusercontent.com/anthropics/claude-code/main/LICENSE.md)",
+      "Bash(curl -s --max-time 30 -L https://www.anthropic.com/legal/commercial-terms)",
+      "Bash(pnpm install *)",
+      "Bash(node -e \"import\\('@modelcontextprotocol/sdk/server/index.js'\\).then\\(m => console.log\\(Object.keys\\(m\\)\\)\\)\")",
+      "Bash(node --input-type=module)",
+      "Bash(node -e \"const p=require\\('./node_modules/.pnpm/@modelcontextprotocol+sdk@1.29.0_zod@3.25.76/node_modules/@modelcontextprotocol/sdk/package.json'\\); console.log\\(Object.keys\\(p.exports||{}\\).slice\\(0,20\\)\\)\")",
+      "Bash(pnpm --filter @vale/shared build)",
+      "Bash(pnpm --filter @vale/mcp build)",
+      "Bash(pnpm --filter @vale/cli build)",
+      "Read(//private/tmp/**)",
+      "Bash(mkdir -p vale-test-ws)",
+      "Bash(timeout 8 node /Users/macbookpro/Documents/my-project/Vale/packages/cli/dist/main.js serve --stdio --workspace /tmp/vale-test-ws)",
+      "Bash(timeout 8 node packages/cli/dist/main.js serve --stdio --workspace /tmp/vale-test-ws)"
+    ]
+  }
+}
