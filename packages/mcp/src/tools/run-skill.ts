@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ToolDefinition, ValeMcpContext } from "./types.js";
 import { ok, err } from "./types.js";
+import { initSkills, findSkill, executeSkill } from "@vale/skills";
 
 const inputSchema = {
   name: z.string().min(1).describe("Name of the skill to execute"),
@@ -17,23 +18,20 @@ export function makeRunSkillTool(_ctx: ValeMcpContext): ToolDefinition {
     async handler(input, ctx) {
       const { name, input: skillInput } = input as { name: string; input?: Record<string, unknown> };
       try {
-        // TODO: integrate with @vale/skills runtime
-        const result = await executeSkill(ctx.workspacePath, name, skillInput ?? {});
+        await initSkills(ctx.workspacePath);
+        const skill = findSkill(name);
+        if (!skill) {
+          return err(`Skill "${name}" not found. Run list_skills to see installed skills.`);
+        }
+
+        const result = await executeSkill(skill, skillInput ?? {}, ctx.workspacePath);
+        if (result.error) {
+          return err(`Skill "${name}" failed: ${result.error}`);
+        }
         return ok(result.output, result.meta);
       } catch (e) {
         return err(`Skill execution failed: ${(e as Error).message}`);
       }
     },
-  };
-}
-
-/** Stub — will be replaced with actual @vale/skills integration */
-async function executeSkill(
-  _workspacePath: string,
-  name: string,
-  _input: Record<string, unknown>,
-): Promise<{ output: string; meta?: Record<string, unknown> }> {
-  return {
-    output: `Skill "${name}" not found or not yet implemented. Install skills via the marketplace.`,
   };
 }

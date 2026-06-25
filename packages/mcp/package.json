@@ -17,6 +17,7 @@
     "@modelcontextprotocol/sdk": "^1.8.0",
     "@vale/core": "workspace:*",
     "@vale/shared": "workspace:*",
+    "@vale/skills": "workspace:*",
     "zod": "^3.24.0"
   },
   "devDependencies": {
