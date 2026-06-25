@@ -73,7 +73,8 @@ class LocalEmbeddingClient implements EmbeddingClient {
     if (this.loading) return this.loading;
 
     this.loading = (async () => {
-      // @ts-expect-error — @huggingface/transformers is an optional peer dependency
+      // @ts-ignore — @huggingface/transformers is an optional dependency; it
+      // may be absent in installs that skip optional deps.
       const { pipeline } = await import("@huggingface/transformers");
       this.pipeline = await pipeline(
         "feature-extraction",

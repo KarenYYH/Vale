@@ -38,12 +38,30 @@ vale ingest ~/my-wiki/raw/
 
 | Package | Description |
 |---------|-------------|
-| `@vale/shared` | Types, constants, config schema, frontmatter parser |
+| `@vale/shared` | Types, constants, config schema, frontmatter parser/serializer |
 | `@vale/core` | Knowledge engine: database, ingest, search, link, lint, embed |
 | `@vale/mcp` | MCP server: 13 tools, middleware, stdio/HTTP transports |
 | `@vale/cli` | CLI: init, serve, doctor, ingest, search, graph, lint, skill |
 | `@vale/skills` | Skill SDK: loader, registry, runtime, marketplace client |
-| `@vale/web` | Web dashboard: graph visualization, health reports (optional) |
+| `@vale/auth` | AuthProvider abstraction + LocalAuthProvider (JWT, bcrypt) |
+| `@vale/agent` | Answer-engine chain: CLI detection, spawn-based agent, fallback |
+| `@vale/server` | HTTP server: REST API (RBAC) + MCP HTTP transport + static PWA |
+| `@vale/web` | Web dashboard (optional) |
+
+## Implementation status
+
+Vale is early-stage. Some surfaces are functional, others are scaffolding:
+
+- **Working:** four-layer knowledge engine, FTS5 full-text + SQLite vector
+  (brute-force) search, 13 MCP tools, REST API with JWT auth + RBAC, the
+  answer-engine fallback chain (spawn-cli → api-llm → retrieval).
+- **Partial / planned:** local embeddings require the optional
+  `@huggingface/transformers` package; LanceDB vector backend, PDF ingest,
+  and the `list_skills`/`run_skill` MCP tools are stubs; the web dashboard
+  currently ships Login/Search/Note pages only (graph visualization and
+  health reports are planned).
+
+See `docs/implementation-plan.md` for the roadmap.
 
 ## Development
 

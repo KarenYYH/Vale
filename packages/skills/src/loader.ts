@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from "fs/promises";
 import { join, basename } from "path";
 import type { SkillManifest, InstalledSkill, SkillType } from "@vale/shared";
-import { VALE_DIR, SKILLS_DIR as skillsSubDir } from "@vale/shared";
+import { SKILLS_DIR as skillsSubDir } from "@vale/shared";
 
 /**
  * Load a skill from a directory path.
@@ -65,8 +65,11 @@ export async function loadAllSkills(
     }
   }
 
-  // 2. Load workspace skills (override built-in)
-  const workspaceSkillsDir = join(workspacePath, VALE_DIR, skillsSubDir);
+  // 2. Load workspace skills (override built-in).
+  // skillsSubDir (SKILLS_DIR) already includes the ".vale" prefix, so it is
+  // joined directly onto the workspace path — joining VALE_DIR again would
+  // produce ".vale/.vale/skills" and silently miss real skills.
+  const workspaceSkillsDir = join(workspacePath, skillsSubDir);
   const workspace = await loadSkillsFromDir(workspaceSkillsDir);
   for (const skill of workspace) {
     if (skill) skillMap.set(skill.manifest.name, skill);
