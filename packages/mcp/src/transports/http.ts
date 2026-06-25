@@ -3,10 +3,13 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import type { ValeMcpServer } from "../server.js";
 import type { ValeMcpContext } from "../tools/types.js";
 import { mountValeMcpServer } from "./mount.js";
+import { isRequestOriginAllowed, defaultAllowedHosts } from "./http-guard.js";
 
 export interface HttpTransportOptions {
   port: number;
   host?: string;
+  /** Extra trusted Origins (e.g. a deployed web UI). */
+  allowedOrigins?: string[];
 }
 
 /**
@@ -20,6 +23,7 @@ export async function serveHttp(
   opts: HttpTransportOptions,
 ): Promise<() => Promise<void>> {
   const { port, host = "127.0.0.1" } = opts;
+  const allowedHosts = defaultAllowedHosts(host, port);
 
   // One transport per session — map by session ID
   const transports = new Map<string, StreamableHTTPServerTransport>();
@@ -28,6 +32,18 @@ export async function serveHttp(
     // Only handle MCP endpoint
     if (req.url !== "/mcp") {
       res.writeHead(404).end();
+      return;
+    }
+
+    // DNS-rebinding / cross-origin protection (I4): reject unexpected Host or
+    // a disallowed cross-site Origin before touching the MCP machinery.
+    if (
+      !isRequestOriginAllowed(
+        { origin: req.headers.origin, host: req.headers.host },
+        { allowedHosts, allowedOrigins: opts.allowedOrigins },
+      )
+    ) {
+      res.writeHead(403).end("Forbidden: origin/host not allowed");
       return;
     }
 

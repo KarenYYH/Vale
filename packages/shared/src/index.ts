@@ -95,7 +95,7 @@ export type {
 export { ok, err, HIGH_RISK_PERMISSIONS, isHighRisk } from "./types/mcp.js";
 
 // ── Frontmatter ──
-export { parseFrontmatter, extractTitle, hasFrontmatter } from "./frontmatter/parser.js";
+export { parseFrontmatter, extractTitle, hasFrontmatter, serializeFrontmatter } from "./frontmatter/parser.js";
 
 // ── Config ──
 export {

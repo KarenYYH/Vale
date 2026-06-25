@@ -112,9 +112,23 @@ export class LocalAuthProvider implements AuthProvider {
   async refreshToken(token: string): Promise<string> {
     const payload = await this.verifyToken(token);
     if (!payload) throw new AuthError(401, "Invalid or expired token");
-    // Re-sign with same claims, fresh expiry
-    const { iat: _iat, exp: _exp, ...claims } = payload;
-    return this.signToken(claims);
+
+    // Re-validate against current state (I5): the user must still exist, and
+    // the refreshed token must carry the user's CURRENT roles/displayName —
+    // not the (possibly stale) claims baked into the old token.
+    const userId = payload.sub as string | undefined;
+    if (!userId) throw new AuthError(401, "Invalid token: missing subject");
+
+    const store = await this.loadUsers();
+    const user = store.users.find((u) => u.userId === userId);
+    if (!user) throw new AuthError(401, "User no longer exists");
+
+    return this.signToken({
+      sub: user.userId,
+      displayName: user.displayName,
+      roles: user.roles,
+      tenantId: user.tenantId,
+    });
   }
 
   // ── User management ──

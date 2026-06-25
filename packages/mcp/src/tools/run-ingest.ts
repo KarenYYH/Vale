@@ -19,8 +19,8 @@ export function makeRunIngestTool(_ctx: ValeMcpContext): ToolDefinition {
     async handler(input, ctx) {
       const { path: inPath, recursive: rec } = input as { path: string; recursive?: boolean };
       try {
-        const { resolveSafePath } = await import("@vale/core");
-        const fullPath = resolveSafePath(ctx.workspacePath, inPath);
+        const { resolveRealSafePath } = await import("@vale/core");
+        const fullPath = await resolveRealSafePath(ctx.workspacePath, inPath);
 
         const stats = await stat(fullPath);
         if (stats.isDirectory()) {

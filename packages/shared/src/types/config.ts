@@ -104,6 +104,7 @@ export interface HttpConfig {
 export interface RateLimitConfig {
   enabled: boolean;
   maxPerMinute: number;
+  maxBurst?: number;
 }
 
 export interface McpConfig {

@@ -1,6 +1,7 @@
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import type { QueryResult, SearchMatch } from "@vale/shared";
+import { serializeFrontmatter } from "@vale/shared";
 import { searchHybrid } from "./hybrid.js";
 import { buildContext } from "./context-builder.js";
 
@@ -44,16 +45,12 @@ export async function saveAnswer(
     .slice(0, 80) || "answer";
 
   const timestamp = new Date().toISOString();
-  const content = `---
-title: "${question}"
-created: ${timestamp.split("T")[0]}
-tags: [answer]
----
-
-# ${question}
-
-${answer}
-`;
+  // Serialize frontmatter safely — the question is untrusted and may contain
+  // quotes, newlines, or "---" that would otherwise break/inject YAML (I3).
+  const content = serializeFrontmatter(
+    { title: question, created: timestamp.split("T")[0], tags: ["answer"] },
+    `# ${question}\n\n${answer}\n`,
+  );
 
   const filePath = join(answersDir, `${slug}.md`);
   await writeFile(filePath, content, "utf-8");
