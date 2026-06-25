@@ -3,11 +3,24 @@ import { hasToken, clearToken } from "./api.js";
 import { LoginPage } from "./pages/Login.js";
 import { SearchPage } from "./pages/Search.js";
 import { NotePage } from "./pages/Note.js";
+import { GraphPage } from "./pages/Graph.js";
+import { HealthPage } from "./pages/Health.js";
+import { SkillsPage } from "./pages/Skills.js";
 
 type Route =
   | { name: "login" }
   | { name: "search" }
+  | { name: "graph" }
+  | { name: "health" }
+  | { name: "skills" }
   | { name: "note"; path: string };
+
+const TABS: Array<{ name: Route["name"]; label: string }> = [
+  { name: "search", label: "Search" },
+  { name: "graph", label: "Graph" },
+  { name: "health", label: "Health" },
+  { name: "skills", label: "Skills" },
+];
 
 export function App() {
   const [route, setRoute] = useState<Route>(
@@ -42,6 +55,18 @@ export function App() {
         >
           🗂️ Vale
         </button>
+        <nav style={{ display: "flex", gap: 4 }}>
+          {TABS.map((t) => (
+            <button
+              key={t.name}
+              className={route.name === t.name ? "" : "secondary"}
+              onClick={() => setRoute({ name: t.name } as Route)}
+              style={{ fontSize: 13, padding: "6px 12px" }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
         <button
           className="secondary"
           onClick={() => { clearToken(); setRoute({ name: "login" }); }}
@@ -55,6 +80,13 @@ export function App() {
         {route.name === "search" && (
           <SearchPage onNoteOpen={(path) => setRoute({ name: "note", path })} />
         )}
+        {route.name === "graph" && (
+          <GraphPage onNoteOpen={(path) => setRoute({ name: "note", path })} />
+        )}
+        {route.name === "health" && (
+          <HealthPage onNoteOpen={(path) => setRoute({ name: "note", path })} />
+        )}
+        {route.name === "skills" && <SkillsPage />}
         {route.name === "note" && (
           <NotePage
             path={route.path}

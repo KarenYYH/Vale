@@ -167,6 +167,9 @@ importers:
       '@vale/shared':
         specifier: workspace:*
         version: link:../shared
+      '@vale/skills':
+        specifier: workspace:*
+        version: link:../skills
       hono:
         specifier: ^4.7.0
         version: 4.12.23

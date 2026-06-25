@@ -159,5 +159,25 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
     }
   });
 
+  // GET /api/skills — list installed skills
+  app.get("/skills", requirePerm("read"), async (ctx) => {
+    try {
+      const { initSkills, getInstalledSkills } = await import("@vale/skills");
+      await initSkills(workspacePath);
+      const skills = getInstalledSkills().map((s) => ({
+        name: s.manifest.name,
+        displayName: s.manifest.displayName,
+        type: s.manifest.type,
+        description: s.manifest.description,
+        version: s.manifest.version,
+        enabled: s.enabled,
+        triggers: s.manifest.triggers ?? [],
+      }));
+      return ctx.json({ skills });
+    } catch (e) {
+      return ctx.json({ error: (e as Error).message }, 500);
+    }
+  });
+
   return app;
 }
