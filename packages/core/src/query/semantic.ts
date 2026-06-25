@@ -27,47 +27,61 @@ export async function searchSemantic(
 
   const queryVec = new Float32Array(queryEmbedding);
 
-  // Try vector index first (handles LanceDB/SQLite/memory backends)
+  // Resolve the vector backend; default to "sqlite" which reads the persisted
+  // embeddings table that ingest populates. (The previous "memory" default
+  // returned a fresh empty index, so search always came back empty — C5.)
+  const { vectorBackend } = await loadVectorBackend(workspacePath);
+
   try {
-    const { vectorBackend } = await loadConfig(workspacePath);
     const index = await createVectorIndex(vectorBackend, workspacePath);
     const results = await index.search(queryVec, limit);
 
-    return results.map((r) => ({
-      filePath: (r.metadata?.filePath as string) ?? r.id.split("::")[0],
-      chunkIndex: (r.metadata?.chunkIndex as number) ?? 0,
-      chunkText: (r.metadata?.chunkText as string) ?? r.id,
-      score: r.score,
-    }));
+    // An empty result set from the index (e.g. the in-memory backend was never
+    // populated) must fall through to brute-force over the SQLite store rather
+    // than silently returning nothing.
+    if (results.length > 0) {
+      return results.map((r) => ({
+        filePath: (r.metadata?.filePath as string) ?? r.id.split("::")[0],
+        chunkIndex: (r.metadata?.chunkIndex as number) ?? 0,
+        chunkText: (r.metadata?.chunkText as string) ?? r.id,
+        score: r.score,
+      }));
+    }
   } catch {
-    // Fall back to brute-force
-    const all = getAllEmbeddings(workspacePath);
-    const scored = all.map((row) => ({
-      filePath: row.filePath,
-      chunkIndex: row.chunkIndex,
-      chunkText: row.chunkText,
-      score: cosineSimilarity(queryVec, row.embedding),
-    }));
-
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, limit);
+    // fall through to brute-force
   }
+
+  // Brute-force cosine over all persisted embeddings.
+  const all = getAllEmbeddings(workspacePath);
+  const scored = all.map((row) => ({
+    filePath: row.filePath,
+    chunkIndex: row.chunkIndex,
+    chunkText: row.chunkText,
+    score: cosineSimilarity(queryVec, row.embedding),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit);
 }
 
-/** Lazy-load config to determine vector backend */
-async function loadConfig(workspacePath: string): Promise<{
+/**
+ * Resolve the configured vector backend. Reads the canonical workspace config
+ * at .vale/config.json; defaults to "sqlite" when absent or unset so that
+ * persisted embeddings are searchable out of the box.
+ */
+async function loadVectorBackend(workspacePath: string): Promise<{
   vectorBackend: "memory" | "sqlite" | "lancedb";
 }> {
   try {
     const { readFile } = await import("fs/promises");
     const { join } = await import("path");
-    const configPath = join(workspacePath, "vale.config.json");
+    const configPath = join(workspacePath, ".vale", "config.json");
     const raw = await readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
     return {
-      vectorBackend: config?.vector?.backend ?? "memory",
+      vectorBackend: config?.vector?.backend ?? "sqlite",
     };
   } catch {
-    return { vectorBackend: "memory" };
+    return { vectorBackend: "sqlite" };
   }
 }

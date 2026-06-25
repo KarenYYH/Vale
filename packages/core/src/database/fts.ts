@@ -23,7 +23,7 @@ export function searchFts(
     const rows = db.prepare(`
       SELECT
         file_path,
-        snippet(entries_fts, 1, '<mark>', '</mark>', '...', 40) AS snippet,
+        snippet(entries_fts, 2, '<mark>', '</mark>', '...', 40) AS snippet,
         rank
       FROM entries_fts
       WHERE entries_fts MATCH @query

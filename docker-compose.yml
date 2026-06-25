@@ -7,7 +7,11 @@ services:
     volumes:
       - ./workspace:/workspace
     environment:
-      - VALE_JWT_SECRET=${VALE_JWT_SECRET:-change-me-in-production}
+      # REQUIRED in production: server refuses to start without a real secret
+      # (>= 32 chars). Generate one with: openssl rand -hex 32
+      - "VALE_JWT_SECRET=${VALE_JWT_SECRET:?VALE_JWT_SECRET is required - generate with: openssl rand -hex 32}"
+      # CORS allow-list (comma-separated). Defaults to localhost only if unset.
+      - "VALE_CORS_ORIGINS=${VALE_CORS_ORIGINS:-}"
       - VALE_AGENT_KEY=${VALE_AGENT_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}

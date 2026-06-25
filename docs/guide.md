@@ -139,6 +139,44 @@ vale skill install ingest-pdf
 vale web
 ```
 
+## 7. 生产部署与安全
+
+启动 Vale Server（`vale web` / `vale serve --http` / Docker）前，注意以下环境变量契约。`NODE_ENV=production` 时这些检查会强制生效（Docker 镜像已默认设为 production）。
+
+| 环境变量 | 是否必需 | 说明 |
+|---------|---------|------|
+| `VALE_JWT_SECRET` | 生产**必需** | JWT 签名密钥，至少 32 字符。缺失、仍为占位串 `change-me-in-production`、或过短时，服务器**启动即报错退出**（fail-closed），不会用弱密钥兜底。生成：`openssl rand -hex 32` |
+| `VALE_CORS_ORIGINS` | 可选 | 允许跨域的来源白名单，逗号分隔（如 `https://wiki.example.com,https://app.example.com`）。**不再支持通配 `*`**；不设时仅信任本机 `localhost:4567` / `127.0.0.1:4567`。 |
+| `VALE_AGENT_KEY` | 可选 | 干活引擎的模型 API key（也可用 `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`）。不设时降级到纯检索档。 |
+
+```bash
+# 本地开发：NODE_ENV 非 production 时会自动生成临时密钥，无需配置
+vale web
+
+# 生产：必须显式提供强密钥
+export VALE_JWT_SECRET=$(openssl rand -hex 32)
+export VALE_CORS_ORIGINS=https://wiki.example.com
+NODE_ENV=production vale web --host 0.0.0.0
+```
+
+```bash
+# Docker：通过 .env 或 shell 注入，compose 已强制要求 VALE_JWT_SECRET
+export VALE_JWT_SECRET=$(openssl rand -hex 32)
+docker compose up -d
+```
+
+### 权限模型（RBAC）
+
+REST API 按角色分级鉴权：
+
+| 角色 | 可读（search/query/notes/graph/lint） | 可写（创建/编辑 notes、ingest） | 管理 |
+|------|:---:|:---:|:---:|
+| `viewer` | ✅ | ❌ | ❌ |
+| `editor` | ✅ | ✅ | ❌ |
+| `admin` | ✅ | ✅ | ✅ |
+
+越权写操作返回 `403 Forbidden`。`/api/health` 为公开探针端点，不需鉴权。
+
 ## 下一步
 
 - [配置参考](./config-reference.md) — vale.config.json 详解

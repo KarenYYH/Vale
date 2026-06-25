@@ -16,12 +16,15 @@ export interface EmbeddingClientOptions {
   apiEndpoint?: string;
   apiModel?: string;
   fallbackToLocal?: boolean;
+  /** Inject a pre-built client (e.g. for tests or custom providers). */
+  client?: EmbeddingClient;
 }
 
 /** Create the default local embedding client */
 export function createEmbeddingClient(
-  _options?: EmbeddingClientOptions,
+  options?: EmbeddingClientOptions,
 ): EmbeddingClient {
+  if (options?.client) return options.client;
   return new LocalEmbeddingClient();
 }
 
