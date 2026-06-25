@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 import { LocalAuthProvider, AuthError } from "@vale/auth";
-import type { Principal } from "@vale/auth";
+import type { Principal, ValePermission } from "@vale/auth";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -33,6 +33,25 @@ export async function requireAuth(ctx: Context, next: Next): Promise<Response | 
 export function mountAuth(auth: LocalAuthProvider) {
   return async (ctx: Context, next: Next) => {
     ctx.set("auth", auth);
+    await next();
+  };
+}
+
+/**
+ * Hono middleware: enforce that the authenticated principal holds `perm` (C1).
+ * Must run after requireAuth (which sets `principal`). Returns 403 when the
+ * principal lacks the permission, 401 if somehow unauthenticated.
+ */
+export function requirePerm(perm: ValePermission) {
+  return async (ctx: Context, next: Next): Promise<Response | void> => {
+    const auth = ctx.get("auth");
+    const principal = ctx.get("principal");
+    if (!principal) {
+      return ctx.json({ error: "Unauthenticated" }, 401);
+    }
+    if (!auth.authorize(principal, perm)) {
+      return ctx.json({ error: `Forbidden: requires '${perm}' permission` }, 403);
+    }
     await next();
   };
 }

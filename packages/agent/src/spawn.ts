@@ -5,6 +5,29 @@ import type { AnswerEngine, AnswerResult, AgentInfo } from "./types.js";
 const DEFAULT_TIMEOUT_MS = 120_000; // 2 min
 
 /**
+ * Build the spawn environment for a CLI agent, injecting ONLY the API-key
+ * env var for that agent's own provider (I1). A claude process must never
+ * receive an OpenAI key and vice versa; any foreign provider key inherited
+ * from the base env is also stripped to avoid leaking it to the child.
+ */
+export function buildAgentEnv(
+  cli: AgentInfo["cli"],
+  apiKey: string,
+  baseEnv: NodeJS.ProcessEnv,
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...baseEnv };
+  // Strip both provider keys first, then set only the matching one.
+  delete env.ANTHROPIC_API_KEY;
+  delete env.OPENAI_API_KEY;
+  if (cli === "claude") {
+    env.ANTHROPIC_API_KEY = apiKey;
+  } else {
+    env.OPENAI_API_KEY = apiKey;
+  }
+  return env;
+}
+
+/**
  * Tier-2b: spawn claude/codex headless, inject MCP config pointing at
  * Vale's own HTTP MCP transport so the agent can call all 13 tools.
  */
@@ -43,11 +66,11 @@ export class SpawnCliEngine implements AnswerEngine {
       cliArgs.push("--mcp-config", mcpConfig);
     }
 
-    const env: Record<string, string> = {
-      ...process.env as Record<string, string>,
-      ANTHROPIC_API_KEY: opts.apiKey,
-      OPENAI_API_KEY: opts.apiKey,
-    };
+    const env = buildAgentEnv(
+      agentInfo.cli,
+      opts.apiKey,
+      process.env,
+    );
 
     return new Promise<AnswerResult>((resolve, reject) => {
       let stdout = "";

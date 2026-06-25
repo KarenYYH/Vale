@@ -6,6 +6,7 @@ import type { AnswerEngine } from "@vale/agent";
 import { mountAuth } from "./middleware/auth.js";
 import { makeAuthRoutes } from "./routes/auth.js";
 import { makeKnowledgeRoutes } from "./routes/knowledge.js";
+import { resolveCorsOrigin } from "./security.js";
 
 export interface AppOptions {
   workspacePath: string;
@@ -18,7 +19,8 @@ export function createApp(opts: AppOptions) {
   const { workspacePath, auth, answerEngine } = opts;
   const app = new Hono();
 
-  app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "PUT", "DELETE"] }));
+  const corsOrigin = resolveCorsOrigin({ envOrigins: process.env.VALE_CORS_ORIGINS });
+  app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "PUT", "DELETE"] }));
   app.use("*", mountAuth(auth));
 
   app.get("/api/ping", (ctx) => ctx.json({ ok: true, version: "0.1.0" }));

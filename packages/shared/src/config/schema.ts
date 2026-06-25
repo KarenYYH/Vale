@@ -97,6 +97,7 @@ const httpSchema = z.object({
 const rateLimitSchema = z.object({
   enabled: z.boolean().default(false),
   maxPerMinute: z.number().int().min(1).max(10_000).default(60),
+  maxBurst: z.number().int().min(1).max(10_000).optional(),
 });
 
 const mcpSchema = z.object({

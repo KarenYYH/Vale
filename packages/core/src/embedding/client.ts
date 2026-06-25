@@ -16,12 +16,15 @@ export interface EmbeddingClientOptions {
   apiEndpoint?: string;
   apiModel?: string;
   fallbackToLocal?: boolean;
+  /** Inject a pre-built client (e.g. for tests or custom providers). */
+  client?: EmbeddingClient;
 }
 
 /** Create the default local embedding client */
 export function createEmbeddingClient(
-  _options?: EmbeddingClientOptions,
+  options?: EmbeddingClientOptions,
 ): EmbeddingClient {
+  if (options?.client) return options.client;
   return new LocalEmbeddingClient();
 }
 
@@ -70,7 +73,8 @@ class LocalEmbeddingClient implements EmbeddingClient {
     if (this.loading) return this.loading;
 
     this.loading = (async () => {
-      // @ts-expect-error — @huggingface/transformers is an optional peer dependency
+      // @ts-ignore — @huggingface/transformers is an optional dependency; it
+      // may be absent in installs that skip optional deps.
       const { pipeline } = await import("@huggingface/transformers");
       this.pipeline = await pipeline(
         "feature-extraction",

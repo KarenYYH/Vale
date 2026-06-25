@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readFile, writeFile } from "fs/promises";
-import { resolveSafePath } from "@vale/core";
+import { resolveRealSafePath } from "@vale/core";
 import type { ToolDefinition, ValeMcpContext } from "./types.js";
 import { ok, err } from "./types.js";
 
@@ -19,7 +19,7 @@ export function makeLinkNotesTool(_ctx: ValeMcpContext): ToolDefinition {
     async handler(input, ctx) {
       const { from, to } = input as { from: string; to: string };
       try {
-        const sourcePath = resolveSafePath(ctx.workspacePath, from);
+        const sourcePath = await resolveRealSafePath(ctx.workspacePath, from);
         const content = await readFile(sourcePath, "utf-8");
 
         // Check if link already exists

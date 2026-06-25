@@ -20,7 +20,7 @@ import {
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { AnswerEngine } from "@vale/agent";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requirePerm } from "../middleware/auth.js";
 
 export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: AnswerEngine) {
   const app = new Hono();
@@ -59,7 +59,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   app.use("*", requireAuth);
 
   // GET /api/search?q=&mode=fts|semantic|hybrid&limit=20
-  app.get("/search", async (ctx) => {
+  app.get("/search", requirePerm("read"), async (ctx) => {
     const q = ctx.req.query("q");
     if (!q) return ctx.json({ error: "q is required" }, 400);
     const mode = ctx.req.query("mode") ?? "hybrid";
@@ -76,7 +76,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // POST /api/query  { question, save? }
-  app.post("/query", async (ctx) => {
+  app.post("/query", requirePerm("read"), async (ctx) => {
     const { question, save } =
       await ctx.req.json<{ question: string; save?: boolean }>();
     if (!question) return ctx.json({ error: "question is required" }, 400);
@@ -96,7 +96,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // GET /api/notes/*path
-  app.get("/notes/*", async (ctx) => {
+  app.get("/notes/*", requirePerm("read"), async (ctx) => {
     const notePath = decodeURIComponent(ctx.req.path.replace(/^\/notes\//, ""));
     try {
       const safePath = resolveSafePath(workspacePath, notePath);
@@ -108,7 +108,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // PUT /api/notes/*path  { content }
-  app.put("/notes/*", async (ctx) => {
+  app.put("/notes/*", requirePerm("write"), async (ctx) => {
     const notePath = decodeURIComponent(ctx.req.path.replace(/^\/notes\//, ""));
     const body = await ctx.req.json<{ content?: string }>();
     if (!body.content) return ctx.json({ error: "content is required" }, 400);
@@ -123,7 +123,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // POST /api/ingest  { path, recursive? }
-  app.post("/ingest", async (ctx) => {
+  app.post("/ingest", requirePerm("write"), async (ctx) => {
     const { path: p, recursive = true } =
       await ctx.req.json<{ path: string; recursive?: boolean }>();
     if (!p) return ctx.json({ error: "path is required" }, 400);
@@ -139,7 +139,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // GET /api/graph
-  app.get("/graph", async (ctx) => {
+  app.get("/graph", requirePerm("read"), async (ctx) => {
     try {
       const linkIndex = await buildLinkIndex(workspacePath);
       const graph = buildGraph(linkIndex);
@@ -150,7 +150,7 @@ export function makeKnowledgeRoutes(workspacePath: string, answerEngine?: Answer
   });
 
   // GET /api/lint
-  app.get("/lint", async (ctx) => {
+  app.get("/lint", requirePerm("read"), async (ctx) => {
     try {
       const report = await runLint(workspacePath);
       return ctx.json({ summary: formatLintReport(report), issues: report });

@@ -1,4 +1,4 @@
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 /**
  * Parse YAML frontmatter from a Markdown document.
@@ -26,7 +26,9 @@ export function parseFrontmatter(content: string): {
   }
 
   const frontmatterRaw = trimmed.slice(3, endMatch.index! + 3);
-  const body = trimmed.slice(endMatch.index! + 3 + 3).trimStart();
+  // Skip past the full closing delimiter (e.g. "\n---\n"), not a fixed 3 chars,
+  // otherwise a stray "-" leaks into the body.
+  const body = trimmed.slice(endMatch.index! + 3 + endMatch[0].length).trimStart();
 
   try {
     const parsed = parseYaml(frontmatterRaw);
@@ -67,4 +69,19 @@ export function extractTitle(
  */
 export function hasFrontmatter(content: string): boolean {
   return content.trimStart().startsWith("---");
+}
+
+/**
+ * Serialize a frontmatter object + body into a Markdown document, with the
+ * frontmatter delimited by `---` fences. Values are serialized via the YAML
+ * library (not string interpolation), so titles/tags containing quotes,
+ * newlines, or `---` are safely escaped and cannot inject new keys (I3).
+ */
+export function serializeFrontmatter(
+  frontmatter: Record<string, unknown>,
+  body = "",
+): string {
+  // yaml.stringify always ends with a trailing newline.
+  const yaml = stringifyYaml(frontmatter);
+  return `---\n${yaml}---\n\n${body}`;
 }

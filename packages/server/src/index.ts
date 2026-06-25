@@ -5,6 +5,7 @@ import { loadConfig } from "@vale/shared";
 import { createValeMcpServer, serveHttp } from "@vale/mcp";
 import { buildAnswerChain } from "@vale/agent";
 import { createApp } from "./app.js";
+import { resolveJwtSecret } from "./security.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -28,8 +29,11 @@ export async function startServer(opts: ServerOptions): Promise<() => Promise<vo
 
   const config = await loadConfig(workspacePath);
 
-  const jwtSecret =
-    process.env.VALE_JWT_SECRET ?? config.auth.jwtSecret ?? "change-me-in-production";
+  const jwtSecret = resolveJwtSecret({
+    envSecret: process.env.VALE_JWT_SECRET,
+    configSecret: config.auth.jwtSecret,
+    isDev: process.env.NODE_ENV !== "production",
+  });
 
   const auth = new LocalAuthProvider({
     jwtSecret,

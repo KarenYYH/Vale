@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
-import { resolveSafePath } from "@vale/core";
+import { dirname } from "path";
+import { resolveRealSafePath } from "@vale/core";
+import { serializeFrontmatter } from "@vale/shared";
 import type { ToolDefinition, ValeMcpContext } from "./types.js";
 import { ok, err } from "./types.js";
 
@@ -23,22 +24,17 @@ export function makeCreateNoteTool(_ctx: ValeMcpContext): ToolDefinition {
     async handler(input, ctx) {
       const args = input as { path: string; title: string; content?: string; tags?: string[]; layer?: string };
       try {
-        const targetPath = resolveSafePath(ctx.workspacePath, args.path);
+        const targetPath = await resolveRealSafePath(ctx.workspacePath, args.path);
         const today = new Date().toISOString().split("T")[0];
         const tags = args.tags ?? [];
         const layer = args.layer ?? "zettel";
 
-        const frontmatter = [
-          "---",
-          `title: "${args.title}"`,
-          `created: ${today}`,
-          `layer: ${layer}`,
-          ...(tags.length > 0 ? [`tags: [${tags.join(", ")}]`] : []),
-          "---",
-          "",
-        ].join("\n");
-
-        const fullContent = frontmatter + (args.content || `# ${args.title}\n`);
+        // Serialize frontmatter via the canonical YAML serializer so titles/tags
+        // containing quotes, newlines, or "---" cannot inject frontmatter (I3).
+        const fullContent = serializeFrontmatter(
+          { title: args.title, created: today, layer, ...(tags.length > 0 ? { tags } : {}) },
+          args.content || `# ${args.title}\n`,
+        );
 
         await mkdir(dirname(targetPath), { recursive: true });
         await writeFile(targetPath, fullContent, "utf-8");
