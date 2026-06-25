@@ -26,7 +26,8 @@
     "yaml": "^2.6.0"
   },
   "optionalDependencies": {
-    "@huggingface/transformers": "^3.0.0"
+    "@huggingface/transformers": "^3.0.0",
+    "pdfjs-dist": "^4.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",

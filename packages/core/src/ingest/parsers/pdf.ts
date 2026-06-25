@@ -4,41 +4,40 @@ import { basename } from "path";
 import type { ParsedDocument } from "@vale/shared";
 
 /**
- * Parse a PDF file, extracting text content.
+ * Parse a PDF file, extracting text content via pdfjs-dist.
  *
- * Uses a lightweight approach: tries pdfjs-dist first,
- * falls back to exec'ing pdftotext if available.
- *
- * NOTE: This is a stub implementation. For production use,
- * install pdfjs-dist or a dedicated PDF parsing library.
+ * Requires the optional `pdfjs-dist` dependency. If extraction fails (missing
+ * dependency or unreadable PDF), this throws so the ingest pipeline records a
+ * failed result rather than silently storing an empty placeholder.
  */
 export async function parsePdf(filePath: string): Promise<ParsedDocument> {
   const buffer = await readFile(filePath);
   const checksum = createHash("sha256").update(buffer).digest("hex");
 
   let title = basename(filePath, ".pdf");
-  let body = "";
 
-  // Attempt to extract text
+  let text: string;
   try {
-    const text = await extractPdfText(buffer);
-    body = text;
+    text = await extractPdfText(buffer);
+  } catch (e) {
+    throw new Error(
+      `PDF text extraction failed for ${basename(filePath)}: ${(e as Error).message}. ` +
+        `Ensure the optional 'pdfjs-dist' dependency is installed.`,
+    );
+  }
 
-    // Try to find a title: first line that looks like a title
-    const lines = text.split("\n").filter((l) => l.trim());
-    if (lines.length > 0) {
-      const first = lines[0].trim();
-      if (first.length > 3 && first.length < 200 && !first.endsWith(".")) {
-        title = first;
-      }
+  // Find a title: first line that looks like one.
+  const lines = text.split("\n").filter((l) => l.trim());
+  if (lines.length > 0) {
+    const first = lines[0].trim();
+    if (first.length > 3 && first.length < 200 && !first.endsWith(".")) {
+      title = first;
     }
-  } catch {
-    body = `[PDF content could not be extracted: ${filePath}]`;
   }
 
   return {
     frontmatter: { title, source: filePath },
-    body,
+    body: text,
     title,
     rawSize: buffer.length,
     checksum,
@@ -46,24 +45,39 @@ export async function parsePdf(filePath: string): Promise<ParsedDocument> {
 }
 
 /**
- * Extract text from a PDF buffer.
- * Stub implementation — replace with pdfjs-dist or similar for production.
+ * Extract text from a PDF buffer using pdfjs-dist (an optional dependency).
+ * Throws if pdfjs-dist is not installed or extraction fails; the caller
+ * (parsePdf) degrades gracefully.
  */
-async function extractPdfText(_buffer: Buffer): Promise<string> {
-  // TODO: Implement with pdfjs-dist
-  // For now, return a placeholder so the ingest pipeline doesn't break
-  //
-  // Production implementation:
-  //   import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
-  //   const doc = await getDocument({ data: buffer }).promise;
-  //   let text = '';
-  //   for (let i = 1; i <= doc.numPages; i++) {
-  //     const page = await doc.getPage(i);
-  //     const content = await page.getTextContent();
-  //     text += content.items.map((item: any) => item.str).join(' ') + '\n';
-  //   }
-  //   return text;
-  throw new Error(
-    "PDF text extraction requires pdfjs-dist. Install with: npm install pdfjs-dist",
-  );
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  // pdfjs-dist is an optional dependency — import lazily.
+  // @ts-ignore — optional dependency, types may be absent
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const getDocument = pdfjs.getDocument as (
+    src: { data: Uint8Array },
+  ) => { promise: Promise<PdfDocument> };
+
+  // Copy into a fresh Uint8Array (pdfjs may detach the buffer).
+  const data = new Uint8Array(buffer);
+  const doc = await getDocument({ data }).promise;
+
+  const pages: string[] = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+    pages.push(text);
+  }
+  return pages.join("\n").trim();
+}
+
+/** Minimal structural types for the pdfjs-dist surface we use. */
+interface PdfDocument {
+  numPages: number;
+  getPage(n: number): Promise<PdfPage>;
+}
+interface PdfPage {
+  getTextContent(): Promise<{ items: Array<{ str?: string }> }>;
 }
