@@ -32,4 +32,26 @@ describe("buildAgentEnv (I1)", () => {
     const env = buildAgentEnv("claude", "sk-ant-123", { PATH: "/usr/bin" });
     expect(env.PATH).toBe("/usr/bin");
   });
+
+  // When no key is provided, the CLI's own login (OAuth/subscription) must be
+  // preserved — we must NOT inject an empty ANTHROPIC_API_KEY/OPENAI_API_KEY
+  // that would override and break that auth.
+  test("empty apiKey does not inject (preserves CLI's own auth)", () => {
+    const env = buildAgentEnv("claude", "", { PATH: "/usr/bin" });
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(env.OPENAI_API_KEY).toBeUndefined();
+    expect(env.PATH).toBe("/usr/bin");
+  });
+
+  test("undefined apiKey does not inject", () => {
+    const env = buildAgentEnv("codex", undefined, {});
+    expect(env.OPENAI_API_KEY).toBeUndefined();
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+  });
+
+  test("empty apiKey still strips an inherited foreign key", () => {
+    // No key to inject, but a stale key in the base env must not leak through.
+    const env = buildAgentEnv("claude", "", { ANTHROPIC_API_KEY: "stale" });
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+  });
 });

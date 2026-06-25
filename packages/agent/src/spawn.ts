@@ -12,17 +12,22 @@ const DEFAULT_TIMEOUT_MS = 120_000; // 2 min
  */
 export function buildAgentEnv(
   cli: AgentInfo["cli"],
-  apiKey: string,
+  apiKey: string | undefined,
   baseEnv: NodeJS.ProcessEnv,
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...baseEnv };
-  // Strip both provider keys first, then set only the matching one.
+  // Strip both provider keys first so a stale/foreign key never leaks to the
+  // child process.
   delete env.ANTHROPIC_API_KEY;
   delete env.OPENAI_API_KEY;
-  if (cli === "claude") {
-    env.ANTHROPIC_API_KEY = apiKey;
-  } else {
-    env.OPENAI_API_KEY = apiKey;
+  // Only inject when we actually have a key. With no key, the CLI falls back to
+  // its own login (OAuth/subscription) — injecting an empty value would break it.
+  if (apiKey) {
+    if (cli === "claude") {
+      env.ANTHROPIC_API_KEY = apiKey;
+    } else {
+      env.OPENAI_API_KEY = apiKey;
+    }
   }
   return env;
 }
@@ -37,7 +42,7 @@ export class SpawnCliEngine implements AnswerEngine {
   constructor(
     private readonly agentInfo: AgentInfo,
     private readonly opts: {
-      apiKey: string;
+      apiKey?: string;       // optional — CLI may use its own login (OAuth/subscription)
       mcpHttpUrl?: string;   // e.g. "http://127.0.0.1:4568/mcp"
       timeoutMs?: number;
       workspacePath: string;

@@ -32,8 +32,10 @@ export async function buildAnswerChain(opts: ChainOptions): Promise<AnswerEngine
   }
 
   if (engine === "claude" || engine === "codex") {
+    // Explicitly chosen: use the detected CLI with whatever auth it has — an
+    // API key if provided, otherwise the CLI's own login (OAuth/subscription).
     const info = await detect(engine);
-    if (info && apiKey) {
+    if (info) {
       return new SpawnCliEngine(info, { apiKey, mcpHttpUrl, workspacePath });
     }
     return new RetrievalEngine();
