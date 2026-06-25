@@ -4,6 +4,7 @@ import type { IngestResult, DocumentParser } from "@vale/shared";
 import { parserRegistry } from "./parsers/registry.js";
 import { findEntry, upsertEntry, indexContent } from "../database/index.js";
 import { generateAndStoreEmbeddings } from "../embedding/indexer.js";
+import type { EmbeddingClientOptions } from "../embedding/client.js";
 import { writeWikiPage } from "./parsers/markdown.js";
 
 /**
@@ -11,11 +12,17 @@ import { writeWikiPage } from "./parsers/markdown.js";
  *   1. Parse — determine parser by extension, extract content
  *   2. Write — create wiki page
  *   3. Index — update SQLite entries + FTS5
- *   4. Embed — (fire-and-forget) generate vector embeddings
+ *   4. Embed — generate vector embeddings
+ *
+ * When `embeddingOptions` is provided the embed step is awaited (so callers
+ * and tests can guarantee embeddings exist on return, and inject a client);
+ * otherwise it runs fire-and-forget so ingest throughput is not blocked on
+ * the embedding model.
  */
 export async function ingestFile(
   workspacePath: string,
   rawFilePath: string,
+  embeddingOptions?: EmbeddingClientOptions,
 ): Promise<IngestResult> {
   try {
     let fileStat;
@@ -72,12 +79,22 @@ export async function ingestFile(
     });
     indexContent(workspacePath, rawFilePath, parsed.body);
 
-    // Step 4: Embed (fire-and-forget)
-    generateAndStoreEmbeddings(
-      workspacePath,
-      rawFilePath,
-      parsed.body,
-    ).catch(() => {});
+    // Step 4: Embed. Awaited when options are supplied (deterministic), else
+    // fire-and-forget so ingest is not blocked on the embedding model.
+    if (embeddingOptions) {
+      await generateAndStoreEmbeddings(
+        workspacePath,
+        rawFilePath,
+        parsed.body,
+        embeddingOptions,
+      );
+    } else {
+      generateAndStoreEmbeddings(
+        workspacePath,
+        rawFilePath,
+        parsed.body,
+      ).catch(() => {});
+    }
 
     return {
       filePath: rawFilePath,
@@ -99,6 +116,7 @@ export async function ingestFile(
 export async function ingestDirectory(
   workspacePath: string,
   dirPath: string,
+  embeddingOptions?: EmbeddingClientOptions,
 ): Promise<IngestResult[]> {
   const { readdir } = await import("fs/promises");
   const { join } = await import("path");
@@ -114,11 +132,11 @@ export async function ingestDirectory(
     if (entry.isFile()) {
       const ext = extname(entry.name).toLowerCase();
       if (parserRegistry.get(ext)) {
-        const result = await ingestFile(workspacePath, fullPath);
+        const result = await ingestFile(workspacePath, fullPath, embeddingOptions);
         results.push(result);
       }
     } else if (entry.isDirectory()) {
-      const subResults = await ingestDirectory(workspacePath, fullPath);
+      const subResults = await ingestDirectory(workspacePath, fullPath, embeddingOptions);
       results.push(...subResults);
     }
   }

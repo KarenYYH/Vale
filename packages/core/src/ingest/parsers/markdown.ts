@@ -1,9 +1,9 @@
 import { readFile } from "fs/promises";
 import { createHash } from "crypto";
 import { basename } from "path";
-import { writeFile } from "fs/promises";
-import { join, extname } from "path";
-import { parseFrontmatter, extractTitle } from "@vale/shared";
+import { writeFile, mkdir } from "fs/promises";
+import { join, extname, dirname } from "path";
+import { parseFrontmatter, extractTitle, serializeFrontmatter } from "@vale/shared";
 import type { ParsedDocument } from "@vale/shared";
 
 /**
@@ -46,24 +46,16 @@ export async function writeWikiPage(
 
   const wikiPath = join(workspacePath, "wiki", "concepts", `${slug}.md`);
 
-  // Reconstruct frontmatter
-  let fmBlock = "";
+  // Reconstruct the document. Reuse the canonical YAML serializer so values
+  // are safely escaped (no injection) and preserved across types — and create
+  // the target directory, since the workspace may not have been scaffolded.
   const fm = parsed.frontmatter;
-  if (Object.keys(fm).length > 0) {
-    fmBlock = "---\n";
-    for (const [key, value] of Object.entries(fm)) {
-      if (typeof value === "string") {
-        fmBlock += `${key}: ${value}\n`;
-      } else if (Array.isArray(value)) {
-        fmBlock += `${key}:\n`;
-        for (const item of value) {
-          fmBlock += `  - ${item}\n`;
-        }
-      }
-    }
-    fmBlock += "---\n\n";
-  }
+  const content =
+    Object.keys(fm).length > 0
+      ? serializeFrontmatter(fm, parsed.body)
+      : parsed.body;
 
-  await writeFile(wikiPath, fmBlock + parsed.body, "utf-8");
+  await mkdir(dirname(wikiPath), { recursive: true });
+  await writeFile(wikiPath, content, "utf-8");
   return wikiPath;
 }
