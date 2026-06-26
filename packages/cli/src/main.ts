@@ -213,9 +213,29 @@ async function runDoctor(args: string[]) {
   const workspacePath = getWorkspace(args);
   const autoFix = args.includes("--fix");
 
-  const { countEntries, countEmbeddings, runLint, formatLintReport } = await import("@vale/core");
+  const { countEntries, countEmbeddings, runLint, formatLintReport, repairWorkspace } =
+    await import("@vale/core");
 
   console.log(`Vale Doctor — checking ${workspacePath}\n`);
+
+  // Repair runs FIRST when requested: the health checks below open the SQLite
+  // DB, which requires the .vale directory to exist. On a bare/broken
+  // workspace, running --fix up front is exactly what creates that structure.
+  if (autoFix) {
+    console.log(`Repairing workspace structure...`);
+    const result = await repairWorkspace(workspacePath);
+    if (result.created.length === 0) {
+      console.log(`  Workspace structure is healthy — nothing to repair.`);
+    } else {
+      console.log(`  Recreated ${result.created.length} missing item(s):`);
+      for (const item of result.created) console.log(`    + ${item}`);
+    }
+    if (result.failed.length > 0) {
+      console.log(`  Failed to repair ${result.failed.length} item(s):`);
+      for (const item of result.failed) console.log(`    ✗ ${item}`);
+    }
+    console.log("");
+  }
 
   const files = countEntries(workspacePath);
   const embeddings = countEmbeddings(workspacePath);
@@ -227,7 +247,9 @@ async function runDoctor(args: string[]) {
   console.log(formatLintReport(report));
 
   if (autoFix) {
-    console.log(`\nAuto-fix not yet implemented.`);
+    console.log(
+      `\n  Note: content issues (broken links, orphans) require manual fixes — see the lint report above.`,
+    );
   }
 }
 

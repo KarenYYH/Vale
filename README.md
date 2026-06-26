@@ -53,12 +53,15 @@ vale ingest ~/my-wiki/raw/
 Vale is early-stage. Some surfaces are functional, others are scaffolding:
 
 - **Working:** four-layer knowledge engine, FTS5 full-text + SQLite vector
-  (brute-force) search, 13 MCP tools, REST API with JWT auth + RBAC, the
-  answer-engine fallback chain (spawn-cli → api-llm → retrieval).
+  (brute-force) search, PDF/Markdown/HTML ingest, 13 MCP tools (incl.
+  `list_skills`/`run_skill` wired to the skill registry), REST API with JWT
+  auth + RBAC, the answer-engine fallback chain (spawn-cli → api-llm →
+  retrieval), `vale doctor --fix` workspace repair.
 - **Partial / planned:** local embeddings require the optional
-  `@huggingface/transformers` package; LanceDB vector backend, PDF ingest,
-  and the `list_skills`/`run_skill` MCP tools are stubs; the web dashboard
-  currently ships Login/Search/Note pages only (graph visualization and
+  `@huggingface/transformers` package; PDF ingest requires the optional
+  `pdfjs-dist` package; the LanceDB backend is not yet wired and falls back to
+  the SQLite vector store; the web dashboard currently ships Login/Search/Note
+  pages only (graph visualization and
   health reports are planned).
 
 See `docs/implementation-plan.md` for the roadmap.

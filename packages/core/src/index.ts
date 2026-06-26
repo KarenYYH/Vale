@@ -61,6 +61,7 @@ export type { FileChangeEvent, FileChangeHandler } from "./fs/types.js";
 export {
   initializeWorkspace,
   isWorkspaceInitialized,
+  repairWorkspace,
 } from "./scaffold/initializer.js";
 export type { ScaffoldResult, FileTemplate } from "./scaffold/initializer.js";
 

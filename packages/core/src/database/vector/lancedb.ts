@@ -3,11 +3,13 @@ import type { VectorIndex, VectorSearchResult } from "./index.js";
 /**
  * LanceDB-backed vector index.
  *
- * LanceDB is an embedded columnar vector database with IVF_PQ indexing.
- * It provides sub-5ms ANN search for 100K+ vectors.
- *
- * This is a STUB — install lancedb (npm: @lancedb/lancedb) to use.
- * Falls back to in-memory brute-force if lancedb is not installed.
+ * LanceDB is an embedded columnar vector database with IVF_PQ indexing for
+ * sub-5ms ANN search over 100K+ vectors. Native LanceDB integration is not
+ * yet wired; when the optional `@lancedb/lancedb` dependency is absent (or
+ * until integration lands) this falls back to the SQLite-backed index, which
+ * reads the persisted embeddings table and performs brute-force cosine search.
+ * (The fallback must NOT be the in-memory index — that is never populated and
+ * would always return empty results.)
  */
 export class LanceDbVectorIndex implements VectorIndex {
   private workspacePath: string;
@@ -19,21 +21,11 @@ export class LanceDbVectorIndex implements VectorIndex {
 
   private async getBackend(): Promise<VectorIndex> {
     if (this.fallback) return this.fallback;
-
-    try {
-      // Dynamic import — lancedb is an optional dependency
-      // @ts-expect-error — @lancedb/lancedb is an optional peer dependency
-      const lancedb = await import("@lancedb/lancedb");
-      // TODO: Implement full LanceDB integration
-      // const db = await lancedb.connect(this.workspacePath + "/.vale/vectors");
-      // const table = await db.openTable("embeddings");
-      throw new Error("LanceDB integration not yet implemented");
-    } catch {
-      // Fall back to in-memory index
-      const { MemoryVectorIndex } = await import("./memory.js");
-      this.fallback = new MemoryVectorIndex();
-      return this.fallback;
-    }
+    // Native LanceDB integration is deferred; use the SQLite store, which is
+    // backed by the real persisted embeddings.
+    const { SqliteVectorIndex } = await import("./sqlite.js");
+    this.fallback = new SqliteVectorIndex(this.workspacePath);
+    return this.fallback;
   }
 
   async add(

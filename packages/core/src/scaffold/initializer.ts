@@ -81,8 +81,18 @@ export async function initializeWorkspace(
 
     try {
       if (template.isDir) {
+        // Only count as "created" when the directory was actually missing, so
+        // a repair pass on a healthy workspace reports nothing newly created.
+        let existed = false;
+        try {
+          const { stat } = await import("fs/promises");
+          existed = (await stat(targetPath)).isDirectory();
+        } catch {
+          existed = false;
+        }
         await mkdir(targetPath, { recursive: true });
-        created.push(template.relPath);
+        if (existed) skipped.push(template.relPath);
+        else created.push(template.relPath);
       } else {
         // Check if file already exists
         try {
@@ -122,4 +132,19 @@ export async function isWorkspaceInitialized(
   } catch {
     return false;
   }
+}
+
+/**
+ * Repair a workspace: recreate any missing standard directories and the
+ * default config/schema files, without overwriting existing content.
+ *
+ * Backs `vale doctor --fix`. Because initializeWorkspace already skips files
+ * that exist and only (re)creates what is missing, repair is just an
+ * initialize pass — idempotent on a healthy workspace (created === []).
+ */
+export async function repairWorkspace(
+  workspacePath: string,
+  workspaceName?: string,
+): Promise<ScaffoldResult> {
+  return initializeWorkspace(workspacePath, workspaceName);
 }

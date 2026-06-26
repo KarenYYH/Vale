@@ -43,6 +43,15 @@ export const api = {
   health: () =>
     req<HealthStats>("GET", "/health"),
 
+  graph: () =>
+    req<KnowledgeGraph>("GET", "/graph"),
+
+  lint: () =>
+    req<{ summary: string; issues: LintIssue[] }>("GET", "/lint"),
+
+  skills: () =>
+    req<{ skills: SkillInfo[] }>("GET", "/skills"),
+
   note: (path: string) =>
     req<{ path: string; content: string }>("GET", `/notes/${encodeURIComponent(path)}`),
 };
@@ -69,4 +78,42 @@ export interface HealthStats {
   brokenLinks: number;
   orphans: number;
   healthScore: number;
+}
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  path: string;
+  layer: string;
+  outgoingCount: number;
+  incomingCount: number;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  count: number;
+}
+
+export interface KnowledgeGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface LintIssue {
+  filePath: string;
+  line?: number;
+  rule: string;
+  severity: "error" | "warning" | "info";
+  message: string;
+}
+
+export interface SkillInfo {
+  name: string;
+  displayName?: string;
+  type: string;
+  description: string;
+  version: string;
+  enabled: boolean;
+  triggers: string[];
 }
